@@ -1,5 +1,58 @@
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
+/*
+ * FunConcertFinder is a way to find out about favorite bands' upcoming tours,
+ * when tickets go on sale for events, what shows are happening at preferred venues,
+ * and upcoming concerts in specific areas.
+ */
+
+/**
+ * App ID for the skill
+ */
+var APP_ID = undefined;//replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
+
+var http = require('http'),
+    alexaDateUtil = require('./alexaDateUtil');
+
+/**
+ * The AlexaSkill prototype and helper functions
+ */
+var AlexaSkill = require('./AlexaSkill');
+
+var FunConcertFinder = function () {
+    AlexaSkill.call(this, APP_ID);
+};
+
+// Extend AlexaSkill
+FunConcertFinder.prototype = Object.create(AlexaSkill.prototype);
+FunConcertFinder.prototype.constructor = FunConcertFinder;
+
+// ----------------------- Override AlexaSkill request and intent handlers -----------------------
+
+FunConcertFinder.prototype.eventHandlers.onSessionStarted = function (sessionStartedRequest, session) {
+    console.log("onSessionStarted requestId: " + sessionStartedRequest.requestId
+        + ", sessionId: " + session.sessionId);
+    // any initialization logic goes here
+};
+
+FunConcertFinder.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
+    console.log("onLaunch requestId: " + launchRequest.requestId + ", sessionId: " + session.sessionId);
+    handleWelcomeRequest(response);
+};
+
+FunConcertFinder.prototype.eventHandlers.onSessionEnded = function (sessionEndedRequest, session) {
+    console.log("onSessionEnded requestId: " + sessionEndedRequest.requestId
+        + ", sessionId: " + session.sessionId);
+    // any cleanup logic goes here
+};
+
+
+
+
+
+
+
+
 /* JSON parsing */
 var artist = "LCD Soundsystem";
 var city = "Los Angeles";
@@ -15,7 +68,7 @@ var appID = "app_id=FunConcertFinder";
 
 
 
-/* 
+/*
  *  Querying an artist to see if they are on tour or not
  */
 var getArtistTourOverview = function(artist) {
@@ -27,9 +80,9 @@ var getArtistTourOverview = function(artist) {
 
 /*
  *  Getting a list of upcoming concert dates from an artist
- */ 
+ */
 var getArtistSchedule = function(artist) {
-  // check to see if band is on tour 
+  // check to see if band is on tour
   var response = getArtistTourOverview(artist);
 
   if (response.upcoming_events_count == 0) {
@@ -42,12 +95,12 @@ var getArtistSchedule = function(artist) {
   }
 }
 
-/* 
+/*
  *  Search by artist upcoming shows in a specific city, state with a given radius
  *   returns data on band and venue { id:, url:, name:, city:, region:, country,: latitude:, longitude:, ticket_status:, on_sale_datetime:}
  */
 var getArtistShowInCity = function(artist, city, state, radius) {
-  // check to see if band is on tour 
+  // check to see if band is on tour
   var response = getArtistTourOverview(artist);
 
   if (response.upcoming_events_count == 0) {
@@ -63,11 +116,11 @@ var getArtistShowInCity = function(artist, city, state, radius) {
 }
 
 /*
- *  Search by artist upcoming shows - 
- *   returns data on venue { id:, url:, name:, city:, region:, country:, longitude:, latitude:, ticket_status:, on_sale_datetime: } 
- */ 
+ *  Search by artist upcoming shows -
+ *   returns data on venue { id:, url:, name:, city:, region:, country:, longitude:, latitude:, ticket_status:, on_sale_datetime: }
+ */
 var getArtistUpcomingShows = function(artist) {
-  // check to see if band is on tour 
+  // check to see if band is on tour
   var response = getArtistTourOverview(artist);
 
   if (response.upcoming_events_count == 0) {
@@ -85,32 +138,20 @@ var getArtistUpcomingShows = function(artist) {
 /*
  * Search by artist for upcoming shows within a data range - date needs to be YYYY-MM-DD format
  *  id: 10560908,
-    url: 'http://www.bandsintown.com/event/10560908?app_id=FunConcertFinder',
-    datetime: '2016-09-04T09:00:00',
-    ticket_url: 'http://www.bandsintown.com/event/10560908/buy_tickets?app_id=FunConcertFinder&came_from=233',
-    artists: [ [Object] ],
+    url:, datetime:, ticket_url: , artists: [ [Object] ],
     venue:
-     { id: 1054482,
-       url: 'http://www.bandsintown.com/venue/1054482',
-       name: 'Stradbally Hall',
-       city: 'Co. Laois',
-       region: null,
-       country: 'Ireland',
-       latitude: 53.0112008,
-       longitude: -7.1692148 },
-    ticket_status: 'available',
-    on_sale_datetime: null } ]
+     { id:, url: name: city: region: null, country:, latitude:, longitude:, ticket_status:, on_sale_datetime: } ]
  *
  */
 var getArtistUpcomingShowsInRange = function(artist, start_date, end_date) {
-  // check to see if band is on tour 
+  // check to see if band is on tour
   var response = getArtistTourOverview(artist);
 
   if (response.upcoming_events_count == 0) {
     return artist + " is not touring or announced a tour.";
   } else {
     // http://api.bandsintown.com/events/search.json?artists[]=Crystal+Castlesk&date=2012-09-01,2012-12-01&app_id=YOUR_APP_ID
-    var artistUpcomingShowsInRangeURL = 
+    var artistUpcomingShowsInRangeURL =
       "http://api.bandsintown.com/events/search.json?artists[]=" + artist + "&date=" + start_date + "," + end_date + "&" + appID;
 
     response = sendGetRequest(artistUpcomingShowsInRangeURL);
@@ -122,10 +163,27 @@ var getArtistUpcomingShowsInRange = function(artist, start_date, end_date) {
  *   On Sale Soon Events
  *
  */
+var getEventsGoingOnSaleInCity = function (city) {
+  // http://api.bandsintown.com/events/on_sale_soon.json?location=Boston,MA&app_id=YOUR_APP_ID
+  var artistGoingOnSaleInCityURL =
+    "http://api.bandsintown.com/events/on_sale_soon.json?location=" + city + "," + state + "&" + appID;
+
+  response = sendGetRequest(artistGoingOnSaleInCityURL);
+  return response;
+}
+
+var getEventsGoingOnSaleInCityWithRadius = function (city, radius) {
+  // http://api.bandsintown.com/events/on_sale_soon.json?location=Boston,MA&app_id=YOUR_APP_ID
+  var artistGoingOnSaleInCityURL =
+    "http://api.bandsintown.com/events/on_sale_soon.json?location=" + city + "," + state + "&radius=" + radius + "&" + appID;
+
+  response = sendGetRequest(artistGoingOnSaleInCityURL);
+  return response;
+}
 
 /*
  *  Send request
- */ 
+ */
 var sendGetRequest = function (url) {
   var response = {};
   xmlhttp.onreadystatechange = function() {
@@ -144,4 +202,6 @@ var sendGetRequest = function (url) {
 // console.log(getArtistSchedule(artist));
 // console.log(getArtistShowInCity(artist, city, state, radius));
 // console.log(getArtistUpcomingShows(artist));
-console.log(getArtistUpcomingShowsInRange(artist, start_date, end_date));
+// console.log(getArtistUpcomingShowsInRange(artist, start_date, end_date));
+// console.log(getEventsGoingOnSaleInCity(city));
+// console.log(getEventsGoingOnSaleInCityWithRadius(city, radius));
