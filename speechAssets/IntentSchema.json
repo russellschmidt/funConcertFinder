@@ -1,0 +1,56 @@
+{
+  "intents": [
+    {
+      "intent": "ArtistOnTour",
+      "slots": [
+        {
+          "name": "Artist",
+          "type": "LIST_OF_ARTISTS"
+        },
+        {
+          "name": "Date",
+          "type": "AMAZON.DATE"
+        }
+      ]
+    },
+    {
+      "intent": "ConcertsNearCity",
+      "slots": [
+        {
+          "name": "City",
+          "type": "AMAZON.CITY"
+        },
+        {
+          "name": "State",
+          "type": "AMAZON.STATE"
+        }
+      ]
+    },
+    {
+      "intent": "ConcertsNearCityWithRadius",
+      "slots": [
+        {
+          "name": "radiusInMiles",
+          "type": "AMAZON.NUMBER"
+        },
+        {
+          "name": "City",
+          "type": "AMAZON.CITY"
+        },
+        {
+          "name": "State",
+          "type": "AMAZON.STATE"
+        }
+      ]
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
+    }
+  ]
+}
