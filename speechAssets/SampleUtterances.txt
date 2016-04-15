@@ -1,0 +1,9 @@
+SearchByArtistIntent {artist}
+SearchByArtistIntent {artist} tour
+
+SearchByArtistIntent get shows for {artist}
+SearchByArtistIntent say shows for {artist}
+SearchByArtistIntent what are some upcoming {artist} shows
+SearchByArtistIntent tell me about upcoming {artist} shows
+SearchByArtistIntent is {artist} on tour
+SearchByArtistIntent tell me about {artist} tour

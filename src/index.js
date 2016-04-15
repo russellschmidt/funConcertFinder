@@ -47,9 +47,112 @@ FunConcertFinder.prototype.eventHandlers.onSessionEnded = function (sessionEnded
 };
 
 
+/**
+ * override intentHandlers to map intent handling functions.
+ */
+FunConcertFinder.prototype.intentHandlers = {
+
+    "SearchByArtistIntent": function (intent, session, response) {
+        // Determine if this turn is for city, for date, or an error.
+        // We could be passed slots with values, no slots, slots with no value.
+        var artistSlot = intent.slots.Artist;
+        if (artistSlot && artistSlot.value) {
+            handleArtistDialogRequest(intent, session, response);
+
+        } else {
+            handleNoSlotDialogRequest(intent, session, response);
+        }
+    },
+
+    "AMAZON.HelpIntent": function (intent, session, response) {
+        handleHelpRequest(response);
+    },
+
+    "AMAZON.StopIntent": function (intent, session, response) {
+        var speechOutput = "Goodbye";
+        response.tell(speechOutput);
+    },
+
+    "AMAZON.CancelIntent": function (intent, session, response) {
+        var speechOutput = "Goodbye";
+        response.tell(speechOutput);
+    }
+};
+
+// -------------------------- FunConcertFinder Domain Specific Business Logic --------------------------
+
+function handleWelcomeRequest(response) {
+    var whichArtistPrompt = "Which artist would you like tour information for?",
+        speechOutput = {
+            speech: "<speak>Welcome to Fun Concert Finder. "
+                + "<audio src='https://s3.amazonaws.com/funconcertfinder/99636__tomlija__small-crowd-yelling-yeah.wav'/>"
+                + whichArtistPrompt
+                + "</speak>",
+            type: AlexaSkill.speechOutputType.SSML
+        },
+        repromptOutput = {
+            speech: "Name a specific musical group or artist to hear tour information",
+            type: AlexaSkill.speechOutputType.PLAIN_TEXT
+        };
+
+    response.ask(speechOutput, repromptOutput);
+}
+
+function handleHelpRequest(response) {
+    var repromptText = "Which artist would you like tour information for?";
+    var speechOutput = "I can give you current and upcoming tour information for "
+        + "artists, bands and musical groups you are interested in. "
+        + "You can say the name of the artist "
+        + "Or you can say exit. "
+        + repromptText;
+
+    response.ask(speechOutput, repromptText);
+}
+
+/*
+ * User said an artist name
+ */
+ function handleArtistDialogRequest(intent, session, response) {
+/*
+     var cityStation = getCityStationFromIntent(intent, false),
+         repromptText,
+         speechOutput;
+     if (cityStation.error) {
+         repromptText = "Currently, I know tide information for these coastal cities: " + getAllStationsText()
+             + "Which city would you like tide information for?";
+         // if we received a value for the incorrect city, repeat it to the user, otherwise we received an empty slot
+         speechOutput = cityStation.city ? "I'm sorry, I don't have any data for " + cityStation.city + ". " + repromptText : repromptText;
+         response.ask(speechOutput, repromptText);
+         return;
+     }
+
+     // if we don't have a date yet, go to date. If we have a date, we perform the final request
+     if (session.attributes.date) {
+         getFinalTideResponse(cityStation, session.attributes.date, response);
+     } else {
+         // set city in session and prompt for date
+         session.attributes.city = cityStation;
+         speechOutput = "For which date?";
+         repromptText = "For which date would you like tide information for " + cityStation.city + "?";
+
+         response.ask(speechOutput, repromptText);
+     }
+*/
+ }
 
 
+/*
+ * Alexa did not receive an artist
+ */
+function handleNoSlotDialogRequest(intent, session, response) {
+    if (session.attributes.city) {
+        // get date re-prompt
+        var repromptText = "Please try again saying an artist name, such as, The Rolling Stones. ";
+        var speechOutput = repromptText;
 
+        response.ask(speechOutput, repromptText);
+    }
+}
 
 
 

@@ -1,6 +1,15 @@
 {
   "intents": [
     {
+      "intent": "SearchByArtist",
+      "slots": [
+        {
+          "name": "Artist",
+          "type": "LIST_OF_ARTISTS"
+        }
+      ]
+    },
+    {
       "intent": "ArtistOnTour",
       "slots": [
         {
