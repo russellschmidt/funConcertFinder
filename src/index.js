@@ -1,10 +1,10 @@
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-
 /*
  * FunConcertFinder is a way to find out about favorite bands' upcoming tours,
  * when tickets go on sale for events, what shows are happening at preferred venues,
  * and upcoming concerts in specific areas.
  */
+
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 /**
  * App ID for the skill
@@ -336,24 +336,22 @@ function handleNoVenueSlotDialogRequest(intent, session, response) {
 
 
 
-
-
 /*
  * User said a City name
  */
  function handleCityDialogRequest(intent, session, response) {
 
   var city = getCityFromIntent(intent, false),
-      state  = getStateFromIntent(intent, false)
+      state = getStateFromIntent(intent, false),
       repromptText,
       speechOutput;
 
-  if (artist.error) {
-    repromptText = "Please say the name of the artist again, or name a different artist.";
-    speechOutput = artist ? "I am sorry, I do not know about " + artist + ". " + repromptText: repromptText;
+  if ((city.error) || (state.error)) {
+    repromptText = "Please say the name of the city and state again, or name a different city and state.";
+    speechOutput = city + " and " + state ? "I am sorry, I do not know about " + city + " and " + state + ". " + repromptText: repromptText;
     response.ask(speechOutput, repromptText);
   } else {
-    getArtistTourResponse(artist, response)
+    getCityEventResponse(city, state, response);
   }
  }
 
@@ -391,10 +389,6 @@ function handleNoVenueSlotDialogRequest(intent, session, response) {
   }
 
   function convert_state(name, to) {
-    if (name.length == 2) {
-      return name;
-    }
-
     var name = name.toUpperCase();
     var states = new Array(                         {'name':'Alabama', 'abbrev':'AL'},          {'name':'Alaska', 'abbrev':'AK'},
         {'name':'Arizona', 'abbrev':'AZ'},          {'name':'Arkansas', 'abbrev':'AR'},         {'name':'California', 'abbrev':'CA'},
@@ -444,17 +438,17 @@ function handleNoVenueSlotDialogRequest(intent, session, response) {
          }
      }
    } else {
-       // lookup the artist.
-       var stateName = convert_state(stateSlot.value, 'abbrev');
+       // lookup the state, convert to 2 letter abbreviation if necessary.
+       var stateName = stateSlot.value.length > 2 ? convert_state(stateSlot.value, 'abbrev') : stateSlot.valuel;
        if (stateName) {
-           return {
-               state: stateName,
-           }
+         return {
+           state: stateName,
+         }
        } else {
-           return {
-               error: true,
-               state: stateName
-           }
+         return {
+           error: true,
+           state: stateName
+         }
        }
      }
    }
@@ -462,30 +456,30 @@ function handleNoVenueSlotDialogRequest(intent, session, response) {
 /*
  * Issue request for artist info and respond to user with the answer
  */
-/*
-function getArtistTourResponse(artist, response) {
+
+function getCityEventResponse(city, state, response) {
+
   // make the API request and respond to the user
-  getArtistSchedule(artist, function getArtistScheduleCallback(err, data) {
+  getUpcomingShowInCity(city, state, function getUpcomingShowInCityCallback(err, data) {
     var speechOutput = '';
 
     if (err) {
       speechOutput = "Sorry, we are having trouble connecting to our data source. Please try again later.";
-    } else if (data == "no tour") {
-      speechOutput = artist + " has not announced upcoming dates yet.";
     } else {
-      speechOutput = artist + " has the following concerts.";
+      speechOutput = city + ", " + state + " has the following upcoming events.";
       for (var key in data) {
-        speechOutput  += alexaDateUtil.getFormattedDate(data[key].datetime);
-                      + " at " + data[key].venue.name
-                      + " in " + data[key].venue.city;
-        if (data[key].on_sale_datetime == null && data[key].ticket_status == 'available') {
-          speechOutput += "Sale date has not been announced.";
-        } else if (data[key].on_sale_datetime != null && data[key].ticket_status == 'available') {
-          speechOutput += "Tickets are available for sale. Sale date is "+ alexaDateUtil.getFormattedDate(data[key].on_sale_datetime) + ".";
-        } else if (data[key].on_sale_datetime != null && data[key].ticket_status == 'unavailable') {
-          speechOutput += "This event is sold out.";
-        } else {
-          speechOutput += "On sale dates have not been announced yet.";
+        speechOutput  += "On " + alexaDateUtil.getFormattedDate(data[key].datetime);
+        speechOutput  += " at " + data[key].venue[name] + " featuring ";
+        for (var i = 0; i < data[key].artists.length; i++ ){
+          if (i == 0) {
+            speechOutput += data[key].artists[i] + " featuring ";
+          } else if (i < data[key].artists.length - 2)  {
+            speechOutput += data[key].artists[i] + ", ";
+          } else if (i < data[key].artists.length - 1)  {
+            speechOutput += data[key].artists[i] + ", and ";
+          } else {
+            speechOutput += data[key].artists[i];
+          }
         }
       }
     }
@@ -493,7 +487,6 @@ function getArtistTourResponse(artist, response) {
 
   });
 }
-*/
 
 function handleNoCitySlotDialogRequest(intent, session, response) {
     if (session.attributes.city) {
@@ -630,7 +623,7 @@ var getArtistUpcomingShowsInRange = function(artist, start_date, end_date) {
 /*
  *  Get events by venue
  */
-var getVenueSchedule = function(venue) {
+var getVenueSchedule = function(venue, getVenueScheduleCallback) {
   // get the venue ID
   // Search for venues matching "House of Blues":
   // http://api.bandsintown.com/venues/search.json?query=House+of+Blues&app_id=YOUR_APP_ID
@@ -653,10 +646,25 @@ var getVenueSchedule = function(venue) {
 }
 
 /*
+ * Upcoming shows
+ *
+ */
+
+var getUpcomingShowInCity = function (city, state, getUpcomingShowInCityCallback) {
+  // http://api.bandsintown.com/events/search.json?location=Boston,MA&page=2&app_id=YOUR_APP_ID
+  var getUpcomingShowInCityURL =
+    "http://api.bandsintown.com/events/search.json?location=";
+  getUpcomingShowInCityURL += city + ',' + state;
+  getUpcomingShowInCityURL += "&" + appID;
+  response = sendGetRequest(artistGoingOnSaleInCityURL);
+  return response;
+}
+
+/*
  *   On Sale Soon Events
  *
  */
-var getEventsGoingOnSaleInCity = function (city) {
+var getEventsGoingOnSaleInCity = function (city,state) {
   // http://api.bandsintown.com/events/on_sale_soon.json?location=Boston,MA&app_id=YOUR_APP_ID
   var artistGoingOnSaleInCityURL =
     "http://api.bandsintown.com/events/on_sale_soon.json?location=" + city + "," + state + "&" + appID;
