@@ -5,7 +5,7 @@
  */
 
 // uncomment for testing in Node on local machine
-// var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 /**
  * App ID for the skill
@@ -14,7 +14,7 @@ var APP_ID = 'amzn1.echo-sdk-ams.app.6c506467-483f-445e-bc05-c4a510f5e9c9';
 //replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
 
 var http = require('http'),
-    alexaDateUtil = require('./alexaDateUtil');
+    alexaDateUtil = require('./AlexaDateUtil');
 
 /**
  * The AlexaSkill prototype and helper functions
