@@ -80,7 +80,8 @@ FunConcertFinder.prototype.intentHandlers = {
         // Determine if this turn is for city, for date, or an error.
         // We could be passed slots with values, no slots, slots with no value.
         var citySlot = intent.slots.City;
-        if (citySlot && citySlot.value) {
+        var stateSlot = intent.slots.State
+        if (citySlot && citySlot.value && stateSlot && stateSlot.value ) {
             handleCityDialogRequest(intent, session, response);
 
         } else {
@@ -110,7 +111,8 @@ function handleWelcomeRequest(response) {
             speech: "<speak>Welcome to Fun Concert Finder. "
                 + "<audio src='https://s3.amazonaws.com/funconcertfinder/99636__tomlija__small-crowd-yelling-yeah.wav'/> "
                 + "I provide concert information by artist, venue and city. "
-                + "You can start your search for concerts by saying artist, venue or city. "
+                + "You can start your search for concerts by saying artist, venue or city and the name of the "
+                + "artist, venue or city. For example you can say artist Radiohead, or, venue Troubador, or city Atlanta."
                 + "</speak>",
             type: AlexaSkill.speechOutputType.SSML
         },
@@ -235,6 +237,93 @@ function handleNoArtistSlotDialogRequest(intent, session, response) {
     }
 }
 
+
+/*
+ *
+ */
+ function handleVenueDialogRequest(intent, session, response) {
+
+  var venue = getVenueFromIntent(intent, false),
+      repromptText,
+      speechOutput;
+
+  if (venue.error) {
+    repromptText = "Please say the name of the venue again, or name a different venue.";
+    speechOutput = venue ? "I am sorry, I do not know about " + venue + ". " + repromptText: repromptText;
+    response.ask(speechOutput, repromptText);
+  } else {
+    getArtistTourResponse(venue, response)
+  }
+ }
+
+/*
+ * Check for empty and invalid venue slot cases
+ */
+ function getVenueFromIntent(intent, assignDefault) {
+   var venueSlot = intent.slots.Venue;
+
+   if (!venueSlot || !venueSlot.value) {
+    if (!assignDefault) {
+        return {
+            error: true
+        }
+    } else {
+        // For sample skill, default to Cow Palace.
+        return {
+            venue: 'Cow Palace'
+        }
+    }
+  } else {
+      // lookup the venue.
+      var venueName = venueSlot.value;
+      if (venueName) {
+          return {
+              venue: venueName,
+          }
+      } else {
+          return {
+              error: true,
+              venue: venueName
+          }
+      }
+    }
+  }
+
+/*
+ * Issue request for venue info and respond to user with the answer
+ */
+function getVenueTourResponse(venue, response) {
+  // make the API request and respond to the user
+  getVenueSchedule(venue, function getVenueScheduleCallback(err, data) {
+    var speechOutput = '';
+
+    if (err) {
+      speechOutput = "Sorry, we are having trouble connecting to our data source. Please try again later.";
+    } else if (data == {}) {
+      speechOutput = "No information available for that venue";
+    } else {
+      speechOutput = venue + " has the following upcoming events.";
+      for (var key in data) {
+        speechOutput  += "On " + alexaDateUtil.getFormattedDate(data[key].datetime);
+        for (var i = 0; i < data[key].artists.length; i++ ){
+          if (i == 0) {
+            speechOutput += data[key].artists[i] + " featuring ";
+          } else if (i < data[key].artists.length - 2)  {
+            speechOutput += data[key].artists[i] + ", ";
+          } else if (i < data[key].artists.length - 1)  {
+            speechOutput += data[key].artists[i] + ", and ";
+          } else {
+            speechOutput += data[key].artists[i];
+          }
+        }
+      }
+    }
+    response.tellWithCard(speechOutput, "FunConcertFinder", speechOutput);
+
+  });
+}
+
+
 function handleNoVenueSlotDialogRequest(intent, session, response) {
     if (session.attributes.city) {
         // get date re-prompt
@@ -244,6 +333,167 @@ function handleNoVenueSlotDialogRequest(intent, session, response) {
         response.ask(speechOutput, repromptText);
     }
 }
+
+
+
+
+
+/*
+ * User said a City name
+ */
+ function handleCityDialogRequest(intent, session, response) {
+
+  var city = getCityFromIntent(intent, false),
+      state  = getStateFromIntent(intent, false)
+      repromptText,
+      speechOutput;
+
+  if (artist.error) {
+    repromptText = "Please say the name of the artist again, or name a different artist.";
+    speechOutput = artist ? "I am sorry, I do not know about " + artist + ". " + repromptText: repromptText;
+    response.ask(speechOutput, repromptText);
+  } else {
+    getArtistTourResponse(artist, response)
+  }
+ }
+
+/*
+ * Check for empty and invalid city slot cases
+ */
+ function getCityFromIntent(intent, assignDefault) {
+   var citySlot = intent.slots.City;
+
+   if (!citySlot || !citySlot.value) {
+    if (!assignDefault) {
+        return {
+            error: true
+        }
+    } else {
+        // For sample skill, default to San Francisco.
+        return {
+            city: 'San Francisco'
+        }
+    }
+  } else {
+      // lookup the artist.
+      var cityName = citySlot.value;
+      if (cityName) {
+          return {
+              city: cityName,
+          }
+      } else {
+          return {
+              error: true,
+              city: cityName
+          }
+      }
+    }
+  }
+
+  function convert_state(name, to) {
+    if (name.length == 2) {
+      return name;
+    }
+
+    var name = name.toUpperCase();
+    var states = new Array(                         {'name':'Alabama', 'abbrev':'AL'},          {'name':'Alaska', 'abbrev':'AK'},
+        {'name':'Arizona', 'abbrev':'AZ'},          {'name':'Arkansas', 'abbrev':'AR'},         {'name':'California', 'abbrev':'CA'},
+        {'name':'Colorado', 'abbrev':'CO'},         {'name':'Connecticut', 'abbrev':'CT'},      {'name':'Delaware', 'abbrev':'DE'},
+        {'name':'Florida', 'abbrev':'FL'},          {'name':'Georgia', 'abbrev':'GA'},          {'name':'Hawaii', 'abbrev':'HI'},
+        {'name':'Idaho', 'abbrev':'ID'},            {'name':'Illinois', 'abbrev':'IL'},         {'name':'Indiana', 'abbrev':'IN'},
+        {'name':'Iowa', 'abbrev':'IA'},             {'name':'Kansas', 'abbrev':'KS'},           {'name':'Kentucky', 'abbrev':'KY'},
+        {'name':'Louisiana', 'abbrev':'LA'},        {'name':'Maine', 'abbrev':'ME'},            {'name':'Maryland', 'abbrev':'MD'},
+        {'name':'Massachusetts', 'abbrev':'MA'},    {'name':'Michigan', 'abbrev':'MI'},         {'name':'Minnesota', 'abbrev':'MN'},
+        {'name':'Mississippi', 'abbrev':'MS'},      {'name':'Missouri', 'abbrev':'MO'},         {'name':'Montana', 'abbrev':'MT'},
+        {'name':'Nebraska', 'abbrev':'NE'},         {'name':'Nevada', 'abbrev':'NV'},           {'name':'New Hampshire', 'abbrev':'NH'},
+        {'name':'New Jersey', 'abbrev':'NJ'},       {'name':'New Mexico', 'abbrev':'NM'},       {'name':'New York', 'abbrev':'NY'},
+        {'name':'North Carolina', 'abbrev':'NC'},   {'name':'North Dakota', 'abbrev':'ND'},     {'name':'Ohio', 'abbrev':'OH'},
+        {'name':'Oklahoma', 'abbrev':'OK'},         {'name':'Oregon', 'abbrev':'OR'},           {'name':'Pennsylvania', 'abbrev':'PA'},
+        {'name':'Rhode Island', 'abbrev':'RI'},     {'name':'South Carolina', 'abbrev':'SC'},   {'name':'South Dakota', 'abbrev':'SD'},
+        {'name':'Tennessee', 'abbrev':'TN'},        {'name':'Texas', 'abbrev':'TX'},            {'name':'Utah', 'abbrev':'UT'},
+        {'name':'Vermont', 'abbrev':'VT'},          {'name':'Virginia', 'abbrev':'VA'},         {'name':'Washington', 'abbrev':'WA'},
+        {'name':'West Virginia', 'abbrev':'WV'},    {'name':'Wisconsin', 'abbrev':'WI'},        {'name':'Wyoming', 'abbrev':'WY'}
+        );
+    var returnState = false;
+    $.each(states, function(index, value){
+        if (to == 'name') {
+            if (value.abbrev == name){
+                returnState = value.name;
+            }
+        } else if (to == 'abbrev') {
+            if (value.name.toUpperCase() == name){
+                returnState = value.abbrev;
+            }
+        }
+    });
+    return returnState;
+  }
+
+  function getStateFromIntent(intent, assignDefault) {
+    var stateSlot = intent.slots.State;
+
+    if (!stateSlot || !stateSlot.value) {
+     if (!assignDefault) {
+         return {
+             error: true
+         }
+     } else {
+         // For sample skill, default to CA.
+         return {
+             state: 'CA'
+         }
+     }
+   } else {
+       // lookup the artist.
+       var stateName = convert_state(stateSlot.value, 'abbrev');
+       if (stateName) {
+           return {
+               state: stateName,
+           }
+       } else {
+           return {
+               error: true,
+               state: stateName
+           }
+       }
+     }
+   }
+
+/*
+ * Issue request for artist info and respond to user with the answer
+ */
+/*
+function getArtistTourResponse(artist, response) {
+  // make the API request and respond to the user
+  getArtistSchedule(artist, function getArtistScheduleCallback(err, data) {
+    var speechOutput = '';
+
+    if (err) {
+      speechOutput = "Sorry, we are having trouble connecting to our data source. Please try again later.";
+    } else if (data == "no tour") {
+      speechOutput = artist + " has not announced upcoming dates yet.";
+    } else {
+      speechOutput = artist + " has the following concerts.";
+      for (var key in data) {
+        speechOutput  += alexaDateUtil.getFormattedDate(data[key].datetime);
+                      + " at " + data[key].venue.name
+                      + " in " + data[key].venue.city;
+        if (data[key].on_sale_datetime == null && data[key].ticket_status == 'available') {
+          speechOutput += "Sale date has not been announced.";
+        } else if (data[key].on_sale_datetime != null && data[key].ticket_status == 'available') {
+          speechOutput += "Tickets are available for sale. Sale date is "+ alexaDateUtil.getFormattedDate(data[key].on_sale_datetime) + ".";
+        } else if (data[key].on_sale_datetime != null && data[key].ticket_status == 'unavailable') {
+          speechOutput += "This event is sold out.";
+        } else {
+          speechOutput += "On sale dates have not been announced yet.";
+        }
+      }
+    }
+    response.tellWithCard(speechOutput, "FunConcertFinder", speechOutput);
+
+  });
+}
+*/
 
 function handleNoCitySlotDialogRequest(intent, session, response) {
     if (session.attributes.city) {
@@ -270,13 +520,15 @@ function formatDateForSpeech(date) {
   return spokenDate;
 }
 
-/* test variables */
-var artist = "Radiohead";
-var city = "Los Angeles";
-var state = "CA";
-var radius = '25';
-var start_date = '2016-01-01';
-var end_date = '2016-12-31';
+/* test variables
+ var artist = "Radiohead";
+ var city = "Los Angeles";
+ var state = "CA";
+ var radius = '25';
+ var start_date = '2016-01-01';
+ var end_date = '2016-12-31';
+ var venue = "House of Blues";
+*/
 
 var xmlhttp = new XMLHttpRequest();
 
@@ -376,6 +628,31 @@ var getArtistUpcomingShowsInRange = function(artist, start_date, end_date) {
 }
 
 /*
+ *  Get events by venue
+ */
+var getVenueSchedule = function(venue) {
+  // get the venue ID
+  // Search for venues matching "House of Blues":
+  // http://api.bandsintown.com/venues/search.json?query=House+of+Blues&app_id=YOUR_APP_ID
+  var venueInfo = '',
+      getVenueEventsURL = '',
+      getVenueURL = "http://api.bandsintown.com/venues/search.json?query=";
+
+  getVenueURL += venue.replace(/\s/g, '+');
+  getVenueURL += "&" + appID;
+  venueInfo = sendGetRequest(getVenueURL);
+
+    // then pass in the venue ID to get the schedule
+  if (venueInfo) {
+    // All upcoming shows at Paradise Rock Club in Boston, MA (venue id 1700):
+    // http://api.bandsintown.com/venues/1700/events.json?app_id=YOUR_APP_ID
+    getVenueEventsURL = "http://api.bandsintown.com/venues/" + venueInfo.id + "/events.json?" + appID;
+    venueInfo = sendGetRequest(getVenueEventsURL);
+  }
+  return venueInfo;
+}
+
+/*
  *   On Sale Soon Events
  *
  */
@@ -415,12 +692,13 @@ var sendGetRequest = function (url) {
 
 
 // console.log(getArtistTourOverview(artist));
- console.log(getArtistSchedule(artist));
+//  console.log(getArtistSchedule(artist));
 // console.log(getArtistShowInCity(artist, city, state, radius));
 // console.log(getArtistUpcomingShows(artist));
 // console.log(getArtistUpcomingShowsInRange(artist, start_date, end_date));
 // console.log(getEventsGoingOnSaleInCity(city));
 // console.log(getEventsGoingOnSaleInCityWithRadius(city, radius));
+// console.log(getVenueSchedule(venue));
 
 // Create the handler that responds to the Alexa Request.
 exports.handler = function (event, context) {

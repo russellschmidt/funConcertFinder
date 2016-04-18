@@ -29,6 +29,16 @@ SearchByCityIntent near {city}
 SearchByCityIntent around {city}
 SearchByCityIntent by {city}
 
+SearchByCityIntent {state}
+SearchByCityIntent near {state}
+SearchByCityIntent around {state}
+SearchByCityIntent by {state}
+
+SearchByCityIntent {city} {state}
+SearchByCityIntent near {city} {state}
+SearchByCityIntent around {city} {state}
+SearchByCityIntent by {city} {state}
+
 SearchByCityIntent shows in {city}
 SearchByCityIntent concerts in {city}
 SearchByCityIntent gigs in {city}
@@ -41,3 +51,29 @@ SearchByCityIntent shows near {city}
 SearchByCityIntent concerts near {city}
 SearchByCityIntent gigs near {city}
 SearchByCityIntent music near {city}
+
+SearchByCityIntent shows in {state}
+SearchByCityIntent concerts in {state}
+SearchByCityIntent gigs in {state}
+SearchByCityIntent music in {state}
+SearchByCityIntent shows by {state}
+SearchByCityIntent concerts by {state}
+SearchByCityIntent gigs by {state}
+SearchByCityIntent music by {state}
+SearchByCityIntent shows near {state}
+SearchByCityIntent concerts near {state}
+SearchByCityIntent gigs near {state}
+SearchByCityIntent music near {state}
+
+SearchByCityIntent shows in {city} {state}
+SearchByCityIntent concerts in {city} {state}
+SearchByCityIntent gigs in {city} {state}
+SearchByCityIntent music in {city} {state}
+SearchByCityIntent shows by {city} {state}
+SearchByCityIntent concerts by {city} {state}
+SearchByCityIntent gigs by {city} {state}
+SearchByCityIntent music by {city} {state}
+SearchByCityIntent shows near {city} {state}
+SearchByCityIntent concerts near {city} {state}
+SearchByCityIntent gigs near {city} {state}
+SearchByCityIntent music near {city} {state}

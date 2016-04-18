@@ -23,11 +23,11 @@
       "slots": [
         {
           "name": "City",
-          "type": "AMAZON.CITY"
+          "type": "AMAZON.US_CITY"
         },
         {
           "name": "State",
-          "type": "AMAZON.STATE"
+          "type": "AMAZON.US_STATE"
         }
       ]
     },
