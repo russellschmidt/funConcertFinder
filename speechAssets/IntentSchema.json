@@ -10,15 +10,11 @@
       ]
     },
     {
-      "intent": "ArtistOnTour",
+      "intent": "SearchByVenue",
       "slots": [
         {
-          "name": "Artist",
-          "type": "LIST_OF_ARTISTS"
-        },
-        {
-          "name": "Date",
-          "type": "AMAZON.DATE"
+          "name": "Venue",
+          "type": "LIST_OF_VENUES"
         }
       ]
     },
@@ -35,29 +31,15 @@
         }
       ]
     },
-    {
-      "intent": "ConcertsNearCityWithRadius",
-      "slots": [
-        {
-          "name": "radiusInMiles",
-          "type": "AMAZON.NUMBER"
-        },
-        {
-          "name": "City",
-          "type": "AMAZON.CITY"
-        },
-        {
-          "name": "State",
-          "type": "AMAZON.STATE"
-        }
-      ]
-    },
+
     {
       "intent": "AMAZON.HelpIntent"
     },
+
     {
       "intent": "AMAZON.StopIntent"
     },
+
     {
       "intent": "AMAZON.CancelIntent"
     }

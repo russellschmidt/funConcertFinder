@@ -9,7 +9,7 @@ var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 /**
  * App ID for the skill
  */
-var APP_ID = undefined;//replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
+var APP_ID = undefined; //replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
 
 var http = require('http'),
     alexaDateUtil = require('./alexaDateUtil');
@@ -60,7 +60,31 @@ FunConcertFinder.prototype.intentHandlers = {
             handleArtistDialogRequest(intent, session, response);
 
         } else {
-            handleNoSlotDialogRequest(intent, session, response);
+            handleNoArtistSlotDialogRequest(intent, session, response);
+        }
+    },
+
+    "SearchByVenueIntent": function (intent, session, response) {
+        // Determine if this turn is for city, for date, or an error.
+        // We could be passed slots with values, no slots, slots with no value.
+        var venueSlot = intent.slots.Venue;
+        if (venueSlot && venueSlot.value) {
+            handleVenueDialogRequest(intent, session, response);
+
+        } else {
+            handleNoVenueSlotDialogRequest(intent, session, response);
+        }
+    },
+
+    "SearchByCityIntent": function (intent, session, response) {
+        // Determine if this turn is for city, for date, or an error.
+        // We could be passed slots with values, no slots, slots with no value.
+        var citySlot = intent.slots.City;
+        if (citySlot && citySlot.value) {
+            handleCityDialogRequest(intent, session, response);
+
+        } else {
+            handleNoCitySlotDialogRequest(intent, session, response);
         }
     },
 
@@ -82,16 +106,16 @@ FunConcertFinder.prototype.intentHandlers = {
 // -------------------------- FunConcertFinder Domain Specific Business Logic --------------------------
 
 function handleWelcomeRequest(response) {
-    var whichArtistPrompt = "Which artist would you like tour information for?",
-        speechOutput = {
+    var speechOutput = {
             speech: "<speak>Welcome to Fun Concert Finder. "
-                + "<audio src='https://s3.amazonaws.com/funconcertfinder/99636__tomlija__small-crowd-yelling-yeah.wav'/>"
-                + whichArtistPrompt
+                + "<audio src='https://s3.amazonaws.com/funconcertfinder/99636__tomlija__small-crowd-yelling-yeah.wav'/> "
+                + "I provide concert information by artist, venue and city. "
+                + "You can start your search for concerts by saying artist, venue or city. "
                 + "</speak>",
             type: AlexaSkill.speechOutputType.SSML
         },
         repromptOutput = {
-            speech: "Name a specific musical group or artist to hear tour information",
+            speech: "You can start your search for concerts by saying artist, venue or city.",
             type: AlexaSkill.speechOutputType.PLAIN_TEXT
         };
 
@@ -99,10 +123,14 @@ function handleWelcomeRequest(response) {
 }
 
 function handleHelpRequest(response) {
-    var repromptText = "Which artist would you like tour information for?";
+    var repromptText = "Would you like to look up concerts by artists, venue or city?";
     var speechOutput = "I can give you current and upcoming tour information for "
         + "artists, bands and musical groups you are interested in. "
-        + "You can say the name of the artist "
+        + "To search by artist name, say Artist. "
+        + "You can look up concerts by venue. "
+        + "Start your search by venue by saying Venue. "
+        + "You can look up concerts by city. "
+        + "Start your search by city by saying City. "
         + "Or you can say exit. "
         + repromptText;
 
@@ -113,51 +141,137 @@ function handleHelpRequest(response) {
  * User said an artist name
  */
  function handleArtistDialogRequest(intent, session, response) {
-/*
-     var cityStation = getCityStationFromIntent(intent, false),
-         repromptText,
-         speechOutput;
-     if (cityStation.error) {
-         repromptText = "Currently, I know tide information for these coastal cities: " + getAllStationsText()
-             + "Which city would you like tide information for?";
-         // if we received a value for the incorrect city, repeat it to the user, otherwise we received an empty slot
-         speechOutput = cityStation.city ? "I'm sorry, I don't have any data for " + cityStation.city + ". " + repromptText : repromptText;
-         response.ask(speechOutput, repromptText);
-         return;
-     }
 
-     // if we don't have a date yet, go to date. If we have a date, we perform the final request
-     if (session.attributes.date) {
-         getFinalTideResponse(cityStation, session.attributes.date, response);
-     } else {
-         // set city in session and prompt for date
-         session.attributes.city = cityStation;
-         speechOutput = "For which date?";
-         repromptText = "For which date would you like tide information for " + cityStation.city + "?";
+  var artist = getArtistFromIntent(intent, false),
+      repromptText,
+      speechOutput;
 
-         response.ask(speechOutput, repromptText);
-     }
-*/
+  if (artist.error) {
+    repromptText = "Please say the name of the artist again, or name a different artist.";
+    speechOutput = artist ? "I am sorry, I do not know about " + artist + ". " + repromptText: repromptText;
+    response.ask(speechOutput, repromptText);
+  } else {
+    getArtistTourResponse(artist, response)
+  }
  }
 
+/*
+ * Check for empty and invalid artist slot cases
+ */
+ function getArtistFromIntent(intent, assignDefault) {
+   var artistSlot = intent.slots.Artist;
+
+   if (!artistSlot || !artistSlot.value) {
+    if (!assignDefault) {
+        return {
+            error: true
+        }
+    } else {
+        // For sample skill, default to Nine Inch Nails.
+        return {
+            artist: 'Nine Inch Nails'
+        }
+    }
+  } else {
+      // lookup the artist.
+      var artistName = artistSlot.value;
+      if (artistName) {
+          return {
+              artist: artistName,
+          }
+      } else {
+          return {
+              error: true,
+              artist: artistName
+          }
+      }
+    }
+  }
 
 /*
- * Alexa did not receive an artist
+ * Issue request for artist info and respond to user with the answer
  */
-function handleNoSlotDialogRequest(intent, session, response) {
+function getArtistTourResponse(artist, response) {
+  // make the API request and respond to the user
+  getArtistSchedule(artist, function getArtistScheduleCallback(err, data) {
+    var speechOutput = '';
+
+    if (err) {
+      speechOutput = "Sorry, we are having trouble connecting to our data source. Please try again later.";
+    } else if (data == "no tour") {
+      speechOutput = artist + " has not announced upcoming dates yet.";
+    } else {
+      speechOutput = artist + " has the following concerts.";
+      for (var key in data) {
+        speechOutput  += alexaDateUtil.getFormattedDate(data[key].datetime);
+                      + " at " + data[key].venue.name
+                      + " in " + data[key].venue.city;
+        if (data[key].on_sale_datetime == null && data[key].ticket_status == 'available') {
+          speechOutput += "Sale date has not been announced.";
+        } else if (data[key].on_sale_datetime != null && data[key].ticket_status == 'available') {
+          speechOutput += "Tickets are available for sale. Sale date is "+ alexaDateUtil.getFormattedDate(data[key].on_sale_datetime) + ".";
+        } else if (data[key].on_sale_datetime != null && data[key].ticket_status == 'unavailable') {
+          speechOutput += "This event is sold out.";
+        } else {
+          speechOutput += "On sale dates have not been announced yet.";
+        }
+      }
+    }
+    response.tellWithCard(speechOutput, "FunConcertFinder", speechOutput);
+
+  });
+}
+
+/*
+ * Alexa did not receive a complete response
+ */
+function handleNoArtistSlotDialogRequest(intent, session, response) {
     if (session.attributes.city) {
         // get date re-prompt
-        var repromptText = "Please try again saying an artist name, such as, The Rolling Stones. ";
+        var repromptText = "Please try saying artist and then their name, such as, artist, The Rolling Stones. ";
         var speechOutput = repromptText;
 
         response.ask(speechOutput, repromptText);
     }
 }
 
+function handleNoVenueSlotDialogRequest(intent, session, response) {
+    if (session.attributes.city) {
+        // get date re-prompt
+        var repromptText = "Please try saying venue and the venue name, such as, venue, Grand Old Opry. ";
+        var speechOutput = repromptText;
 
+        response.ask(speechOutput, repromptText);
+    }
+}
 
-/* JSON parsing */
-var artist = "LCD Soundsystem";
+function handleNoCitySlotDialogRequest(intent, session, response) {
+    if (session.attributes.city) {
+        // get date re-prompt
+        var repromptText = "Please try saying city and the city name again, such as, city, Seattle. ";
+        var speechOutput = repromptText;
+
+        response.ask(speechOutput, repromptText);
+    }
+}
+
+/*
+ * format yyyymmdd into something useable
+ */
+function formatDateForSpeech(date) {
+  var spokenDate = '';
+
+  var year = date.substr(0,4);
+  var month = date.substr(4,2);
+  var day = date.substr(6,2);
+
+  day = DAYS_OF_MONTH[date.getDate() - 1]
+
+  return spokenDate;
+}
+
+/* test variables */
+var artist = "Radiohead";
 var city = "Los Angeles";
 var state = "CA";
 var radius = '25';
@@ -184,12 +298,12 @@ var getArtistTourOverview = function(artist) {
 /*
  *  Getting a list of upcoming concert dates from an artist
  */
-var getArtistSchedule = function(artist) {
+var getArtistSchedule = function(artist, artistScheduleCallback) {
   // check to see if band is on tour
   var response = getArtistTourOverview(artist);
 
   if (response.upcoming_events_count == 0) {
-    return artist + " is not touring or announced a tour.";
+    return "no tour";
   } else {
     // http://api.bandsintown.com/artists/Skrillex/events.json?app_id=YOUR_APP_ID
     var artistEventsURL = "http://api.bandsintown.com/artists/" + artist + "/events.json?" + appID;
@@ -207,7 +321,7 @@ var getArtistShowInCity = function(artist, city, state, radius) {
   var response = getArtistTourOverview(artist);
 
   if (response.upcoming_events_count == 0) {
-    return artist + " is not touring or announced a tour.";
+    return "no tour";
   } else {
     // http://api.bandsintown.com/events/search?artists[]=Skrillex&location=Boston,MA&radius=10&format=json&app_id=YOUR_APP_ID
     var artistShowInCityURL =
@@ -227,7 +341,7 @@ var getArtistUpcomingShows = function(artist) {
   var response = getArtistTourOverview(artist);
 
   if (response.upcoming_events_count == 0) {
-    return artist + " is not touring or announced a tour.";
+    return "no tour";
   } else {
     // http://api.bandsintown.com/events/search?artists[]=Common&artists[]=Dwele&format=xml&app_id=YOUR_APP_ID
     var artistUpcomingShowsURL =
@@ -240,8 +354,7 @@ var getArtistUpcomingShows = function(artist) {
 
 /*
  * Search by artist for upcoming shows within a data range - date needs to be YYYY-MM-DD format
- *  id: 10560908,
-    url:, datetime:, ticket_url: , artists: [ [Object] ],
+ *  id:, url:, datetime:, ticket_url: , artists: [ [Object] ],
     venue:
      { id:, url: name: city: region: null, country:, latitude:, longitude:, ticket_status:, on_sale_datetime: } ]
  *
@@ -251,7 +364,7 @@ var getArtistUpcomingShowsInRange = function(artist, start_date, end_date) {
   var response = getArtistTourOverview(artist);
 
   if (response.upcoming_events_count == 0) {
-    return artist + " is not touring or announced a tour.";
+    return "no tour";
   } else {
     // http://api.bandsintown.com/events/search.json?artists[]=Crystal+Castlesk&date=2012-09-01,2012-12-01&app_id=YOUR_APP_ID
     var artistUpcomingShowsInRangeURL =
@@ -302,9 +415,15 @@ var sendGetRequest = function (url) {
 
 
 // console.log(getArtistTourOverview(artist));
-// console.log(getArtistSchedule(artist));
+ console.log(getArtistSchedule(artist));
 // console.log(getArtistShowInCity(artist, city, state, radius));
 // console.log(getArtistUpcomingShows(artist));
 // console.log(getArtistUpcomingShowsInRange(artist, start_date, end_date));
 // console.log(getEventsGoingOnSaleInCity(city));
 // console.log(getEventsGoingOnSaleInCityWithRadius(city, radius));
+
+// Create the handler that responds to the Alexa Request.
+exports.handler = function (event, context) {
+    var funConcertFinder = new FunConcertFinder();
+    funConcertFinder.execute(event, context);
+};

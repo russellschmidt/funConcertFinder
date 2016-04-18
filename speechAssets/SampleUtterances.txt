@@ -1,3 +1,7 @@
+SearchByArtistIntent artist
+SearchByArtistIntent band
+SearchByArtistIntent group
+
 SearchByArtistIntent {artist}
 SearchByArtistIntent {artist} tour
 
@@ -7,3 +11,33 @@ SearchByArtistIntent what are some upcoming {artist} shows
 SearchByArtistIntent tell me about upcoming {artist} shows
 SearchByArtistIntent is {artist} on tour
 SearchByArtistIntent tell me about {artist} tour
+
+SearchByVenueIntent venue
+
+SearchByVenueIntent {venue}
+
+SearchByVenueIntent venue {venue}
+SearchByVenueIntent concerts at {venue}
+SearchByVenueIntent shows at {venue}
+SearchByVenueIntent gig at {venue}
+
+SearchByCityIntent city
+SearchByCityIntent town
+
+SearchByCityIntent {city}
+SearchByCityIntent near {city}
+SearchByCityIntent around {city}
+SearchByCityIntent by {city}
+
+SearchByCityIntent shows in {city}
+SearchByCityIntent concerts in {city}
+SearchByCityIntent gigs in {city}
+SearchByCityIntent music in {city}
+SearchByCityIntent shows by {city}
+SearchByCityIntent concerts by {city}
+SearchByCityIntent gigs by {city}
+SearchByCityIntent music by {city}
+SearchByCityIntent shows near {city}
+SearchByCityIntent concerts near {city}
+SearchByCityIntent gigs near {city}
+SearchByCityIntent music near {city}
