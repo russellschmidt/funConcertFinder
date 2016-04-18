@@ -1,32 +1,32 @@
 {
   "intents": [
     {
-      "intent": "SearchByArtist",
+      "intent": "SearchByArtistIntent",
       "slots": [
         {
-          "name": "Artist",
+          "name": "artist",
           "type": "LIST_OF_ARTISTS"
         }
       ]
     },
     {
-      "intent": "SearchByVenue",
+      "intent": "SearchByVenueIntent",
       "slots": [
         {
-          "name": "Venue",
+          "name": "venue",
           "type": "LIST_OF_VENUES"
         }
       ]
     },
     {
-      "intent": "ConcertsNearCity",
+      "intent": "SearchByCityIntent",
       "slots": [
         {
-          "name": "City",
+          "name": "city",
           "type": "AMAZON.US_CITY"
         },
         {
-          "name": "State",
+          "name": "state",
           "type": "AMAZON.US_STATE"
         }
       ]
