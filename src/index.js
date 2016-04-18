@@ -4,14 +4,14 @@
  * and upcoming concerts in specific areas.
  */
 
+ /**
+  * App ID for the skill
+  */
+ var APP_ID = 'amzn1.echo-sdk-ams.app.6c506467-483f-445e-bc05-c4a510f5e9c9';
+ //replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
+
 // uncomment for testing in Node on local machine
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-
-/**
- * App ID for the skill
- */
-var APP_ID = 'amzn1.echo-sdk-ams.app.6c506467-483f-445e-bc05-c4a510f5e9c9';
-//replace with 'amzn1.echo-sdk-ams.app.[your-unique-value-here]';
 
 var http = require('http'),
     alexaDateUtil = require('./AlexaDateUtil');
@@ -111,7 +111,8 @@ FunConcertFinder.prototype.intentHandlers = {
 function handleWelcomeRequest(response) {
     var speechOutput = {
             speech: "<speak>Welcome to Fun Concert Finder. "
-                + "<audio src='https://s3.amazonaws.com/funconcertfinder/99636__tomlija__small-crowd-yelling-yeah.wav'/> "
+                // this is not working on upload
+                //+ "<audio src='https://s3.amazonaws.com/funconcertfinder/100099__noisecollector__raw-recital-applause-small.mp3'/> "
                 + "I provide concert information by artist, venue and city. "
                 + "You can start your search for concerts by saying artist, venue or city and the name of the "
                 + "artist, venue or city. For example you can say artist Radiohead, or, venue Troubador, or city Atlanta."
